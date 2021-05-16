@@ -60,11 +60,11 @@ names(gdc.files.recode) <- gdc.valid.files$V1
 
 # all files
 gdc.files <- list.files(path='/home/stephen/Documents/classes/bme/237/final_project/data/gdc/individual/')
-gdc.files <- intersect(gdc.files, gdc.valid.files$V1)
+#gdc.files <- intersect(gdc.files, gdc.valid.files$V1)
 
 # reading in data
 data.dir <- '/home/stephen/Documents/classes/bme/237/final_project/data/gdc/individual/'
-tmp.files <- lapply(gdc.files$V1, function(x) {
+tmp.files <- lapply(gdc.files, function(x) {
   tmp.file.path <- Sys.glob(file.path(paste0(data.dir, x), "*.htseq.counts.gz"))
   tmp.df <- as.data.frame(read.table(gzfile(tmp.file.path)))
   rownames(tmp.df) <- tmp.df$V1
@@ -85,8 +85,8 @@ rownames(d) <- rownames(tmp.files[[1]])
 valid.samples <- intersect(sample_ids, colnames(d))  # in both datasets with metadata
 
 d <- d[,colnames(d) %in% valid.samples]
-#ds <- ds[,colnames(ds) %in% valid.samples]
-ds <- ds[, colnames(ds) %in% colnames(exp.gdc)]
+ds <- ds[,colnames(ds) %in% valid.samples]
+#ds <- ds[, colnames(ds) %in% colnames(exp.gdc)]
 md <- meta.data[meta.data$sample %in% valid.samples, ]
 
 # save as RDS
@@ -107,58 +107,183 @@ meta.data <- readRDS(paste0(home.dir, "/data/meta_data.rds"))
 
 # get hgnc_symbol gene names
 ensembl = useMart("ensembl", dataset="hsapiens_gene_ensembl")
-enst = rownames(exp.kal)
+enst = rownames(exp.gdc)
 enst.no_version = sapply(strsplit(as.character(enst),"\\."),"[[",1)
-g.name <- getBM(attributes = c('ensembl_transcript_id', 'hgnc_symbol'), filters = 'ensembl_transcript_id', values=enst.no_version, mart=ensembl)
+g.name <- as.data.frame(getBM(attributes = c('ensembl_gene_id', 'hgnc_symbol'), filters = 'ensembl_gene_id', values=enst.no_version, mart=ensembl))
 head(g.name)
+# 
+# #saveRDS(g.name, file = paste0(home.dir, "/data/kal_recode.rds"))
+# #saveRDS(g.name, file = paste0(home.dir, "/data/gdc_recode.rds"))
+# 
+# 
+# #g.name.list <- g.name$hgnc_symbol
+# #names(g.name.list) <- g.name$ensembl_transcript_id
+# #g.name.list <- g.name.list[!duplicated(names(g.name.list))]
+# 
+#  # exp.gdc
+# # change g.name getBM depending on dataset
+# #   exp.gdc uses ensembl_gene_id
+# #   exp.kal uses ensembl_transcript_id
+# 
+# # convert to ensembl_transcript_id to hgnc_symbol names
+# cts <- exp.kal
+# cts <- as.data.frame(cbind(cts, enst.no_version))
+# #cts$enst.no_version <- lvls_revalue(factor(cts$enst.no_version, levels = unique(g.name$ensembl_transcript_id)), g.name$hgnc_symbol)
+# cts$enst.no_version <- recode(cts$enst.no_version, !!!g.name.list)
+# 
+# cts <- na.omit(cts)
+# head(cts)
+# 
+# # aggregate duplicate gene and bind to integer count
+# cts.tmp <- aggregate(apply(cts[-7], 2, as.numeric), cts["enst.no_version"], sum)
+# cts <- cts.tmp[-1, -1]
+# cts <- apply(cts, 2, as.integer)
+# rownames(cts) <- cts.tmp$enst.no_version[-1]
+# head(cts)
 
-cts <- exp.kal # exp.gdc 
-# change g.name getBM depending on dataset
-# exp.gdc uses ensembl_gene_id
-# exp.kal uses ensembl_transcript_id
+################################################################################
+                    ### reload recoded gene name data  ###
 
-# convert to ensembl_transcript_id to hgnc_symbol names
-cts <- as.data.frame(cbind(cts, enst.no_version))
-cts$enst.no_version <- lvls_revalue(factor(cts$enst.no_version, levels = g.name$ensembl_transcript_id), g.name$hgnc_symbol)
+# load GDC data
+exp.gdc.csv <- fread(
+  file = './data/exp_gdc.csv',
+  sep = ",",
+  check.names = FALSE,
+  data.table = FALSE,
+  header = TRUE
+)
+exp.gdc <- aggregate(apply(exp.gdc.csv[-1], 2, as.numeric), exp.gdc.csv["V1"], sum)
+rownames(exp.gdc) <- exp.gdc$V1
+exp.gdc <- exp.gdc[,-1]
+exp.gdc <- exp.gdc[-1,]
+#exp.gdc.tmp <- apply(exp.gdc, 2, as.integer)
 
-#cts$enst.no_version <- lvls_revalue(factor(cts$enst.no_version, levels = g.name$ensembl_transcript_id), g.name$hgnc_symbol)
-# recode into gene symbol
-# recode(unlist(lapply(tmp.files, names)), !!!gdc.files.recode)
-# ^ something like above line, with gdc.files.recode as g.name as a list
-# if works, do same for Kallisto data
+# load Kallisto data
+exp.kal.csv <- fread(
+  file = './data/exp_kal.csv',
+  sep = ",",
+  check.names = FALSE,
+  data.table = FALSE,
+  header = TRUE
+)
 
-cts <- na.omit(cts)
-head(cts)
+exp.kal <- aggregate(apply(exp.kal.csv[-1], 2, as.numeric), exp.kal.csv["V1"], sum)
+rownames(exp.kal) <- exp.kal$V1
+exp.kal <- exp.kal[,-1]
+exp.kal <- exp.kal[-1,]
+exp.kal.tmp <- as.data.frame(apply(exp.kal, 2, as.integer))
+rownames(exp.kal.tmp) <- rownames(exp.kal)
+exp.kal <- exp.kal.tmp
 
-# aggregate duplicate gene and bind to integer count
-cts.tmp <- aggregate(apply(cts[-7], 2, as.numeric), cts["enst.no_version"], sum)
-cts <- cts.tmp[-1, -1]
-cts <- apply(cts, 2, as.integer)
-rownames(cts) <- cts.tmp$enst.no_version[-1]
-head(cts)
+#saveRDS(exp.gdc, file = paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+#saveRDS(exp.kal, file = paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
+
+
+
 
 
 ################################################################################
+# scatter plot
 
-enst = rownames(exp.gdc)
-enst.no_version = sapply(strsplit(as.character(enst),"\\."),"[[",1)
-g.name <- getBM(attributes = c('ensembl_gene_id', 'hgnc_symbol'), filters = 'ensembl_gene_id', values=enst.no_version, mart=ensembl)
-head(g.name)
+library(ggplot2)
+library(scales)
+#library(ggpubr)
 
-cts <- exp.gdc
+# plotting theme
+theme_tufte <- function(base_size = 19, base_family = "Arial", ticks = FALSE) # "serif"
+{
+  ret <- theme_bw(base_family = base_family, base_size = base_size) +
+    theme(
+      legend.background = element_blank(), legend.key = element_blank(),
+      panel.background = element_blank(), panel.border = element_blank(),
+      strip.background = element_blank(), plot.background = element_blank(),
+      axis.line = element_line(colour = "black", size = rel(1)),
+      panel.grid = element_blank(),
+      axis.text.y = element_text(colour = "black"),
+      panel.spacing = unit(1, "lines"),
+      plot.margin = unit(c(10, 10, 5, 0), "mm"),
+      axis.title = element_text(size = 19, face = "plain", family = "Arial"),
+      strip.text.x = element_text(colour = "black", face = "plain", family = "Arial", size = 19),
+      plot.caption = element_text(hjust = 1, size = 9) # 0 or 1 for left or right align
+    )
+  ret
+}
 
-# convert to ensembl_gene_id to hgnc_symbol names
-cts <- as.data.frame(cbind(cts, enst.no_version))
-cts$enst.no_version <- lvls_revalue(factor(cts$enst.no_version, levels = g.name$ensembl_gene_id), g.name$hgnc_symbol)
-cts <- na.omit(cts)
-head(cts)
+all.genes <- c(rownames(exp.gdc), rownames(exp.kal))
+all.overlap.genes <- all.genes[duplicated(all.genes)]
 
-# aggregate duplicate gene and bind to integer count
-cts.tmp <- aggregate(apply(cts[-7], 2, as.numeric), cts["enst.no_version"], sum)
-cts <- cts.tmp[-1, -1]
-cts <- apply(cts, 2, as.integer)
-rownames(cts) <- cts.tmp$enst.no_version[-1]
-head(cts)
+exp.gdc.overlap.genes <- exp.gdc[rownames(exp.gdc) %in% all.overlap.genes, ]
+exp.kal.overlap.genes <- exp.kal[rownames(exp.kal) %in% all.overlap.genes, ]
+
+# average across rows
+exp.gdc.overlap.genes.avg <- rowMeans(exp.gdc.overlap.genes)
+exp.gdc.overlap.genes.avg <- rowMeans(exp.kal.overlap.genes)
+
+# bind data
+data <- cbind(rownames(exp.kal.overlap.genes), exp.kal.overlap.genes, exp.gdc.overlap.genes.avg)
+colnames(data) <- c('gene_id', 'GDC_count', 'KAL_count')
+
+data <- cbind(exp.kal.overlap.genes, exp.gdc.overlap.genes.avg)
+colnames(data) <- c('KAL_count', 'GDC_count')
+data <- as.data.frame(data)
+
+# plot
+ggplot(data, aes(x=log10(GDC_count), y=log10(KAL_count))) + 
+  theme_tufte() +
+  geom_point() +
+  labs(
+    title = 'GDC_count vs KAL_count gene counts',
+    x = 'GDC_count raw counts (log10)',
+    y = 'KAL_count raw counts (log10)'
+  ) + 
+  # stat_cor(
+  #   method = 'spearman'
+  # ) +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(labels = comma)
+
+cor.test(
+  data$GDC_count,
+  data$KAL_count,
+  method = 'pearson'
+)
+
+ggplot(data, aes(x=GDC_count, y=KAL_count)) + 
+  theme_tufte() +
+  geom_point() +
+  labs(
+    title = 'GDC_count vs KAL_count gene counts',
+    x = 'GDC_count raw counts (log10)',
+    y = 'KAL_count raw counts (log10)'
+  ) + 
+  # stat_cor(
+  #   method = 'spearman'
+  # ) +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(labels = comma)
+
+
+# expression boplot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
