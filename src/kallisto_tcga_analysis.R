@@ -1,6 +1,7 @@
 require(data.table)
 require(dplyr)
 require(plyr)
+library(ggplot2)
 
 library(tximport)
 library(biomaRt)
@@ -185,9 +186,9 @@ exp.kal <- exp.kal.tmp
 ################################################################################
 # scatter plot
 
-library(ggplot2)
-library(scales)
-#library(ggpubr)
+# Read RDS
+exp.gdc = readRDS(paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+exp.kal = readRDS(paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
 
 # plotting theme
 theme_tufte <- function(base_size = 19, base_family = "Arial", ticks = FALSE) # "serif"
@@ -263,7 +264,164 @@ ggplot(data, aes(x=GDC_count, y=KAL_count)) +
   scale_y_continuous(labels = comma)
 
 
-# expression boplot
+
+
+# dataset expression boxplot
+exp.kal
+exp.gdc
+
+##
+data <- data.frame(v1=rnorm(100),v2=rnorm(100),v3=rnorm(100), v4=rnorm(100))
+meltData <- melt(data)
+ggplot(meltData, aes(factor(variable), value)) +
+  geom_boxplot()
+##
+
+#
+meltData <- melt(exp.gdc[,1:10])
+ggplot(meltData, aes(factor(variable), value)) +
+  geom_boxplot()
+#
+
+
+
+
+
+
+p.data <- transpose(data)
+colnames(p.data) <- rownames(data) # set sample names
+rownames(p.data) <- colnames(data) # set gene names
+  
+p.data <- melt(p.data)
+p.data <- (cbind(p.data, m.data[rep(seq_len(nrow(m.data)), each = ncol(data)), ]))
+
+m.data <- meta.data
+#p.data <- transpose(exp.kal)
+#colnames(p.data) <- rownames(exp.kal) # set sample names
+#rownames(p.data) <- colnames(exp.kal) # set gene names
+
+p.data <- melt(p.data)
+p.data <- (cbind(p.data, m.data[rep(seq_len(ncol(m.data)), each = nrow(p.data)), ]))
+
+
+
+ggplot(
+  data = data,
+  aes_string(
+    x = data.x,
+    y = data.y
+  )
+) +
+  geom_boxplot(
+    outlier.size = 0.5,
+    outlier.alpha = 0.8,
+    outlier.shape = outlier.shape,
+    color = "grey50",
+    alpha = 0.6,
+    lwd = 0.4
+  )
+
+
+dataset.boxplot.func <- function(data,
+                                 data.x,
+                                 data.y,
+                                 feature1 = NULL,
+                                 feature2 = NULL,
+                                 violin = FALSE,
+                                 stats = FALSE,
+                                 facet = FALSE,
+                                 outlier.shape = 19,
+                                 facet.scale = "free_x",
+                                 p.title = "",
+                                 p.xlab = "",
+                                 p.ylab = "") {
+  if (is.null(feature1)) {
+    p <- ggplot(
+      data = data,
+      aes_string(
+        x = data.x,
+        y = data.y
+      )
+    )
+  }
+  else {
+    p <- ggplot(
+      data = data,
+      aes_string(
+        x = data.x,
+        y = data.y,
+        fill = feature1
+      )
+    )
+  }
+  p +
+    theme_tufte() +
+    
+    # violin plot
+    {
+      if (violin) {
+        geom_violin(alpha = 0.6)
+      }
+    } +
+    {
+      if (violin) {
+        stat_summary(
+          fun.data = whiskers,
+          geom = "pointrange",
+          color = "black",
+          size = 0.2
+        )
+      }
+    } +
+    {
+      if (!violin) {
+        geom_boxplot(
+          outlier.size = 0.5,
+          outlier.alpha = 0.8,
+          outlier.shape = outlier.shape,
+          color = "grey50",
+          alpha = 0.6,
+          lwd = 0.4
+        )
+      }
+    } +
+    
+    # factor2 facet
+    {
+      if (feature2 != "NULL") { # !is.null(feature2) ||
+        facet_wrap(feature2, scale = facet.scale, ncol = 3)
+      }
+    } +
+    
+    theme(
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    ) +
+    labs(
+      title = p.title,
+      x = p.xlab,
+      y = p.ylab
+    )# +
+    #scale_fill_manual(values = as.vector(polychrome34()) ) +
+    #guides(fill = guide_legend(ncol = 3)) +
+    #theme(legend.position = "bottom", legend.box = "horizontal")
+}
+
+
+
+
+
+
+###
+exp.gdc = readRDS(paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+exp.kal = readRDS(paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
+
+
+write.table(exp.gdc, file="data/exp_txt/exp_gdc_recoded_aggr.txt",sep = "\t", quote = F
+            ,row.names = T, col.names = T)
+
+write.table(exp.kal, file="data/exp_txt/exp_kal_recoded_aggr.txt",sep = "\t", quote = F
+            ,row.names = T, col.names = T)
 
 
 
@@ -274,17 +432,8 @@ ggplot(data, aes(x=GDC_count, y=KAL_count)) +
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+intersect(colnames(exp.gdc), colnames(exp.kal))
+length(colnames(exp.gdc)) - length(intersect(colnames(exp.gdc), colnames(exp.kal)))
 
 
 

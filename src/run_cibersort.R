@@ -10,14 +10,13 @@ source('bin/cibersort/CIBERSORT.R')
 # (4) quantile normalization = FALSE (recommended for RNA-Seq data)
 # rest default, which basically means to not run 'absolute' mode
 
-signature_matrix <- '/home/stephen/Documents/classes/bme/237/final_project/bin/cibersort/LM22.txt' 
-mixture_file <- '/home/stephen/Documents/classes/bme/237/final_project/bin/cibersort/LM22.txt' 
+signature_matrix <- 'bin/cibersort/LM22.txt' 
+mixture_file <- 'data/exp_txt/exp_gdc_recoded_aggr.txt'
 
-
-results <- CIBERSORT('./CIBERSORT_package/LM22.txt','./CIBERSORT_package/ExampleMixtures-GEPs.txt', 100, FALSE)
+results <- CIBERSORT(signature_matrix, mixture_file, 100, FALSE)
 
 # write result table to file
-write.table(results,file="./Cibersort_resuts.txt",sep = "\t", quote = F
-            ,row.names = T, col.names = T)
+write.table(results, file="analysis/cb_gdc_resuts.txt", sep = "\t", quote = F,
+            row.names = T, col.names = T)
 
 
