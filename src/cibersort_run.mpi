@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH -p 128x24
+#SBATCH -J cibersort_gdc
+#SBATCH --mail-user=sjhwang@ucsc.edu
+#SBATCH --mail-type=ALL
+#SBATCH -o job_%j.out
+#SBATCH -N 2
+#SBATCH -n 16
+#SBATCH -t 23:00:00
+#SBATCH --mem=30G
+
+echo 'Activating environment'
+source /hb/home/sjhwang/miniconda3/etc/profile.d/conda.sh
+conda activate r
+
+# Run the script
+echo 'Running cibersort'
+Rscript run_cibersort.R
+echo 'Done cibersort'
