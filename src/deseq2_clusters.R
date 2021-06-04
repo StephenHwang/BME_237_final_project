@@ -31,12 +31,13 @@ gdc.counts <- gdc.counts[,rownames(coldata)]
 
 # Cluster 1 v 2
 
-# gdc.1v2.samples <- subset(coldata, (coldata$cluster == 1 | coldata$cluster == 2))
-# gdc.1v2.samples <- arrange(gdc.1v2.samples, row.names(gdc.1v2.samples))
-# gdc.1v2.counts <- gdc.counts[,rownames(gdc.1v2.samples)]
-# gdc.1v2.dds <- DESeqDataSetFromMatrix(countData = gdc.1v2.counts, colData = gdc.1v2.samples, design = ~ cluster)
-# gdc.1v2.dds <- DESeq(gdc.1v2.dds)
-
+gdc.1v2.samples <- subset(coldata, (coldata$cluster == 1 | coldata$cluster == 2))
+gdc.1v2.samples <- arrange(gdc.1v2.samples, row.names(gdc.1v2.samples))
+gdc.1v2.counts <- gdc.counts[,rownames(gdc.1v2.samples)]
+gdc.1v2.dds <- DESeqDataSetFromMatrix(countData = gdc.1v2.counts, colData = gdc.1v2.samples, design = ~ cluster)
+gdc.1v2.dds <- DESeq(gdc.1v2.dds)
+gdc.1v2.results <- results(gdc.1v2.dds, alpha=0.01)  # cutoff 0.01
+gdc.1v2.results.ordered <- gdc.1v2.results[order(gdc.1v2.results$pvalue),]
 # > results(gdc.1v2.dds)
 
 # log2 fold change (MLE): cluster 2 vs 1 
@@ -56,6 +57,9 @@ gdc.counts <- gdc.counts[,rownames(coldata)]
 # ZZEF1        2512.65     -0.0332544  0.291037 -0.114262 0.9090304  0.976560
 # ZZZ3         2612.96     -0.2911954  0.174468 -1.669045 0.0951084  0.462155
 
+# Number of genes with p-values lower than 0.1
+# > sum(gdc.1v2.results$padj < 0.1, na.rm=TRUE)
+# [1] 872
 ################################################################################
 
 # Cluster 1 v 3
@@ -82,6 +86,32 @@ gdc.counts <- gdc.counts[,rownames(coldata)]
 # ZYXP1           0.00             NA        NA        NA        NA        NA
 # ZZEF1        2551.86     -0.0653491  0.219697 -0.297451  0.766122  0.966647
 # ZZZ3         2721.69     -0.2789569  0.196674 -1.418370  0.156083  0.669724
+
+# Trying LFC shrinkage to reduce noise
+gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apeglm")
+
+# > gdc.1v2.results.LFC
+# log2 fold change (MAP): cluster 2 vs 1 
+# Wald test p-value: cluster 2 vs 1 
+# DataFrame with 38481 rows and 5 columns
+# baseMean log2FoldChange      lfcSE    pvalue      padj
+# <numeric>      <numeric>  <numeric> <numeric> <numeric>
+#   A1BG        26.10325   -2.26284e-06 0.00144268 0.0853226  0.441247
+# A1BG-AS1   117.02513   -1.98549e-06 0.00144268 0.6077793  0.864460
+# A1CF         1.40726   -3.78292e-07 0.00144269 0.7721800        NA
+# A2M      25388.58834    5.58707e-06 0.00144269 0.0500594  0.353206
+# A2M-AS1    157.96678    5.58140e-07 0.00144268 0.8872912  0.969581
+# ...              ...            ...        ...       ...       ...
+# ZYG11B       2173.97    4.14112e-05 0.00144293 0.4648450  0.792240
+# ZYX         28817.25   -7.28618e-05 0.00144359 0.4617236  0.790712
+# ZYXP1           0.00             NA         NA        NA        NA
+# ZZEF1        2512.65   -5.55216e-05 0.00144321 0.9090304  0.976560
+# ZZZ3         2612.96   -2.51557e-06 0.00144264 0.0951084  0.462155
+
+# > sum(gdc.1v2.results.LFC$padj < 0.05, na.rm=TRUE)
+# [1] 528
+# > sum(gdc.1v2.results.LFC$padj < 0.01, na.rm=TRUE)
+# [1] 225
 
 ################################################################################
 
@@ -200,14 +230,14 @@ gdc.counts <- gdc.counts[,rownames(coldata)]
 
 # Cluster 2 v 1,3,4
 
-gdc.2vAllSamples <- coldata
-gdc.2vAllSamples$cluster <- as.character(gdc.2vAllSamples$cluster)  # convert to char class
-gdc.2vAllSamples$cluster[gdc.2vAllSamples$cluster != "2"] <- "all"
-gdc.2vAllSamples$cluster <- as.factor(gdc.2vAllSamples$cluster)  # convert back to factor
-gdc.2vAllSamples <- arrange(gdc.2vAllSamples, row.names(gdc.2vAllSamples))
-gdc.2vAllCounts <- gdc.counts[,rownames(gdc.2vAllSamples)]
-gdc.2vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.2vAllCounts, colData = gdc.2vAllSamples, design = ~ cluster)
-gdc.2vAllSamples.dds <- DESeq(gdc.2vAllSamples.dds)
+# gdc.2vAllSamples <- coldata
+# gdc.2vAllSamples$cluster <- as.character(gdc.2vAllSamples$cluster)  # convert to char class
+# gdc.2vAllSamples$cluster[gdc.2vAllSamples$cluster != "2"] <- "all"
+# gdc.2vAllSamples$cluster <- as.factor(gdc.2vAllSamples$cluster)  # convert back to factor
+# gdc.2vAllSamples <- arrange(gdc.2vAllSamples, row.names(gdc.2vAllSamples))
+# gdc.2vAllCounts <- gdc.counts[,rownames(gdc.2vAllSamples)]
+# gdc.2vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.2vAllCounts, colData = gdc.2vAllSamples, design = ~ cluster)
+# gdc.2vAllSamples.dds <- DESeq(gdc.2vAllSamples.dds)
 
 # > results(gdc.2vAllSamples.dds)
 # log2 fold change (MLE): cluster all vs 2 
@@ -226,6 +256,96 @@ gdc.2vAllSamples.dds <- DESeq(gdc.2vAllSamples.dds)
 # ZYXP1           0.00             NA        NA        NA         NA        NA
 # ZZEF1        2675.75      0.0365515 0.1403098  0.260506  0.7944734  0.921482
 # ZZZ3         2710.68      0.0755771 0.0936856  0.806710  0.4198337  0.712412
+
+################################################################################
+
+# Cluster 3 v 4
+
+# gdc.3v4.samples <- subset(coldata, (coldata$cluster == 3 | coldata$cluster == 4))
+# gdc.3v4.samples <- arrange(gdc.3v4.samples, row.names(gdc.3v4.samples))
+# gdc.3v4.counts <- gdc.counts[,rownames(gdc.3v4.samples)]
+# gdc.3v4.dds <- DESeqDataSetFromMatrix(countData = gdc.3v4.counts, colData = gdc.3v4.samples, design = ~ cluster)
+# gdc.3v4.dds <- DESeq(gdc.3v4.dds)
+
+# > results(gdc.3v4.dds)
+# log2 fold change (MLE): cluster 4 vs 3 
+# Wald test p-value: cluster 4 vs 3 
+# DataFrame with 38481 rows and 6 columns
+#             baseMean log2FoldChange     lfcSE       stat    pvalue      padj
+#            <numeric>      <numeric> <numeric>  <numeric> <numeric> <numeric>
+# A1BG        25.80273    -0.27349406  0.237368 -1.1521925  0.249242  0.632097
+# A1BG-AS1   112.35602    -0.16684787  0.252322 -0.6612490  0.508453  0.819292
+# A1CF         2.01736    -0.14810478  0.523577 -0.2828709  0.777276  0.935460
+# A2M      21981.56198    -0.00554852  0.167417 -0.0331418  0.973561  0.993582
+# A2M-AS1    220.88350    -0.21760727  0.233499 -0.9319392  0.351368  0.719037
+# ...              ...            ...       ...        ...       ...       ...
+# ZYG11B       2533.11     -0.1130465  0.110317  -1.024744  0.305484  0.680411
+# ZYX         26453.85      0.0304433  0.153144   0.198789  0.842428  0.955709
+# ZYXP1           0.00             NA        NA         NA        NA        NA
+# ZZEF1        2777.64      0.1426979  0.146783   0.972167  0.330968  0.702124
+# ZZZ3         2772.16      0.0688792  0.108518   0.634729  0.525605  0.828846
+
+################################################################################
+
+# Cluster 3 v 1,2,4
+
+# gdc.3vAllSamples <- coldata
+# gdc.3vAllSamples$cluster <- as.character(gdc.3vAllSamples$cluster)  # convert to char class
+# gdc.3vAllSamples$cluster[gdc.3vAllSamples$cluster != "3"] <- "all"
+# gdc.3vAllSamples$cluster <- as.factor(gdc.3vAllSamples$cluster)  # convert back to factor
+# gdc.3vAllSamples <- arrange(gdc.3vAllSamples, row.names(gdc.3vAllSamples))
+# gdc.3vAllCounts <- gdc.counts[,rownames(gdc.3vAllSamples)]
+# gdc.3vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.3vAllCounts, colData = gdc.3vAllSamples, design = ~ cluster)
+# gdc.3vAllSamples.dds <- DESeq(gdc.3vAllSamples.dds)
+# 
+# > results(gdc.3vAllSamples.dds)
+# log2 fold change (MLE): cluster all vs 3 
+# Wald test p-value: cluster all vs 3 
+# DataFrame with 38481 rows and 6 columns
+# baseMean log2FoldChange     lfcSE      stat    pvalue      padj
+# <numeric>      <numeric> <numeric> <numeric> <numeric> <numeric>
+#   A1BG        25.95116     -0.1320719  0.194368 -0.679492  0.496826  0.802868
+# A1BG-AS1   114.31391     -0.0288409  0.200309 -0.143982  0.885515  0.965983
+# A1CF         1.77696     -0.3621670  0.434985 -0.832596  0.405072  0.748467
+# A2M      23368.17184      0.1752992  0.164930  1.062872  0.287840  0.657431
+# A2M-AS1    196.11169     -0.3551225  0.188281 -1.886133  0.059277  0.318452
+# ...              ...            ...       ...       ...       ...       ...
+# ZYG11B       2392.13     -0.1426942 0.0905260 -1.576278  0.114962  0.440843
+# ZYX         27415.20      0.1526490 0.1343022  1.136608  0.255702  0.625413
+# ZYXP1           0.00             NA        NA        NA        NA        NA
+# ZZEF1        2675.75      0.0911641 0.1414611  0.644447  0.519286  0.815904
+# ZZZ3         2710.68      0.0667084 0.0946691  0.704648  0.481029  0.793515
+
+################################################################################
+
+# Cluster 4 v 1,2,3
+
+# gdc.4vAllSamples <- coldata
+# gdc.4vAllSamples$cluster <- as.character(gdc.4vAllSamples$cluster)  # convert to char class
+# gdc.4vAllSamples$cluster[gdc.4vAllSamples$cluster != "4"] <- "all"
+# gdc.4vAllSamples$cluster <- as.factor(gdc.4vAllSamples$cluster)  # convert back to factor
+# gdc.4vAllSamples <- arrange(gdc.4vAllSamples, row.names(gdc.4vAllSamples))
+# gdc.4vAllCounts <- gdc.counts[,rownames(gdc.4vAllSamples)]
+# gdc.4vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.4vAllCounts, colData = gdc.4vAllSamples, design = ~ cluster)
+# gdc.4vAllSamples.dds <- DESeq(gdc.4vAllSamples.dds)
+# 
+# > results(gdc.4vAllSamples.dds)
+# log2 fold change (MLE): cluster all vs 4 
+# Wald test p-value: cluster all vs 4 
+# DataFrame with 38481 rows and 6 columns
+#             baseMean log2FoldChange     lfcSE      stat    pvalue      padj
+#            <numeric>      <numeric> <numeric> <numeric> <numeric> <numeric>
+# A1BG        25.95116      0.2677714  0.185617  1.442601  0.149133  0.571823
+# A1BG-AS1   114.31391      0.2165177  0.191011  1.133532  0.256991  0.690339
+# A1CF         1.77696     -0.1612413  0.420149 -0.383772  0.701148  0.926105
+# A2M      23368.17184      0.1960864  0.157768  1.242878  0.213913  0.647855
+# A2M-AS1    196.11169     -0.0376423  0.183301 -0.205358  0.837292  0.964668
+# ...              ...            ...       ...       ...       ...       ...
+# ZYG11B       2392.13      0.0194952 0.0877599  0.222142  0.824203  0.961103
+# ZYX         27415.20      0.1189274 0.1289442  0.922317  0.356363  0.771042
+# ZYXP1           0.00             NA        NA        NA        NA        NA
+# ZZEF1        2675.75     -0.1145592 0.1353564 -0.846352  0.397356  0.797625
+# ZZZ3         2710.68     -0.0326437 0.0908547 -0.359295  0.719374  0.931215
 
 ################################################################################
 
