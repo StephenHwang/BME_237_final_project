@@ -2,9 +2,10 @@ require(data.table)
 require(dplyr)
 require(plyr)
 library(ggplot2)
-
+require(cluster) # sillhuette score
 library(igraph)
 library(psych) # cor2dist
+
 
 
 home.dir <- '/home/stephen/Documents/classes/bme/237/final_project'
@@ -58,7 +59,6 @@ cb.kal.val.sig.joint <- cb.kal.val.sig[rownames(cb.kal.val.sig) %in% overlap.sam
 cb.gdc.val.sig.joint.t <- transpose(cb.gdc.val.sig.joint)
 rownames(cb.gdc.val.sig.joint.t) <- colnames(cb.gdc.val.sig.joint)
 colnames(cb.gdc.val.sig.joint.t) <- rownames(cb.gdc.val.sig.joint)
-
 cb.kal.val.sig.joint.t <- transpose(cb.kal.val.sig.joint)
 rownames(cb.kal.val.sig.joint.t) <- colnames(cb.kal.val.sig.joint)
 colnames(cb.kal.val.sig.joint.t) <- rownames(cb.kal.val.sig.joint)
@@ -66,15 +66,21 @@ colnames(cb.kal.val.sig.joint.t) <- rownames(cb.kal.val.sig.joint)
 # sort samples by sample name
 cb.gdc.val.sig.joint.t <- cb.gdc.val.sig.joint.t[,order(colnames(cb.gdc.val.sig.joint.t))]
 cb.kal.val.sig.joint.t <- cb.kal.val.sig.joint.t[,order(colnames(cb.kal.val.sig.joint.t))]
-
+colnames(cb.kal.val.sig.joint.t) == colnames(cb.gdc.val.sig.joint.t)
 
 
 # cluster data
 # https://psych-networks.com/r-tutorial-identify-communities-items-networks/
+data <-      cb.gdc.val.sig.joint.t                                             ## dataset
+data.un.t <- cb.gdc.val.sig.joint                                               ## dataset (untransposed)
 
-data <- cb.gdc.val.sig.joint.t
+data <-      cb.kal.val.sig.joint.t                                             ## dataset
+data.un.t <- cb.kal.val.sig.joint                                               ## dataset (untransposed)
+
+
+data.un.t <- data.un.t[order(rownames(data.un.t)), ]
+
 data <- data[ , which(apply(data, 2, var) != 0)]
-
 correlationmatrix = cor(data)
 distancematrix <- cor2dist(correlationmatrix)
 DM1 <- as.matrix(distancematrix)
@@ -88,7 +94,6 @@ DM1 <- as.matrix(distancematrix)
 ## Keeps connection for cor ~ -1
 ## You may wish to choose a different threshhold
 DM1[abs(correlationmatrix) < 0.33] = 0  # threshold 0.33
-#DM1[abs(correlationmatrix) < 0.05] = 0  # threshold 0.33
 #DM1[correlationmatrix < 0.33] = 0      # no abs (filters out negative correlation)
 
 G1 <- graph.adjacency(DM1, mode = "undirected", weighted = TRUE, diag = TRUE)
@@ -101,15 +106,33 @@ plot(G1, vertex.color=rainbow(12, alpha=0.6)[clusterlouvain$membership])
 num.clusters <- length(unique(clusterlouvain$membership))
 num.clusters
 
+# sillhuette score
+clusterlouvain$names == rownames(data.un.t)
+ss <- silhouette(clusterlouvain$membership, dist(data.un.t))
+mean(ss[, 3])
+
+# cb.gdc.val.sig.joint
+#   ss: -0.05452075
+#    k: 4
+
+
+
+
+
+# testing order
+#data.frame(clusterlouvain$membership, rownames(cb.kal.val.sig.joint))
+
+#clusterlouvain$names
+
+
+
+
+
+
+
 
 
 # explore LM22 matrix
-
-
-
-
-
-
 lm22 <- read.table(
   file = "./bin/cibersort/LM_not_22.txt",
   sep = ",",
