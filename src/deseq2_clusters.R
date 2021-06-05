@@ -31,13 +31,13 @@ gdc.counts <- gdc.counts[,rownames(coldata)]
 
 # Cluster 1 v 2
 
-gdc.1v2.samples <- subset(coldata, (coldata$cluster == 1 | coldata$cluster == 2))
-gdc.1v2.samples <- arrange(gdc.1v2.samples, row.names(gdc.1v2.samples))
-gdc.1v2.counts <- gdc.counts[,rownames(gdc.1v2.samples)]
-gdc.1v2.dds <- DESeqDataSetFromMatrix(countData = gdc.1v2.counts, colData = gdc.1v2.samples, design = ~ cluster)
-gdc.1v2.dds <- DESeq(gdc.1v2.dds)
-gdc.1v2.results <- results(gdc.1v2.dds, alpha=0.01)  # cutoff 0.01
-gdc.1v2.results.ordered <- gdc.1v2.results[order(gdc.1v2.results$pvalue),]
+# gdc.1v2.samples <- subset(coldata, (coldata$cluster == 1 | coldata$cluster == 2))
+# gdc.1v2.samples <- arrange(gdc.1v2.samples, row.names(gdc.1v2.samples))
+# gdc.1v2.counts <- gdc.counts[,rownames(gdc.1v2.samples)]
+# gdc.1v2.dds <- DESeqDataSetFromMatrix(countData = gdc.1v2.counts, colData = gdc.1v2.samples, design = ~ cluster)
+# gdc.1v2.dds <- DESeq(gdc.1v2.dds)
+# gdc.1v2.results <- results(gdc.1v2.dds, alpha=0.01)  # cutoff 0.01
+# gdc.1v2.results.ordered <- gdc.1v2.results[order(gdc.1v2.results$pvalue),]
 # > results(gdc.1v2.dds)
 
 # log2 fold change (MLE): cluster 2 vs 1 
@@ -88,7 +88,7 @@ gdc.1v2.results.ordered <- gdc.1v2.results[order(gdc.1v2.results$pvalue),]
 # ZZZ3         2721.69     -0.2789569  0.196674 -1.418370  0.156083  0.669724
 
 # Trying LFC shrinkage to reduce noise
-gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apeglm")
+# gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apeglm")
 
 # > gdc.1v2.results.LFC
 # log2 fold change (MAP): cluster 2 vs 1 
@@ -143,32 +143,58 @@ gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apegl
 ################################################################################
 
 # Cluster 1 v 2,3,4 (all)
-# gdc.1vAllSamples <- coldata
-# gdc.1vAllSamples$cluster <- as.character(gdc.1vAllSamples$cluster)  # convert to char class
-# gdc.1vAllSamples$cluster[gdc.1vAllSamples$cluster != "1"] <- "all"
-# gdc.1vAllSamples$cluster <- as.factor(gdc.1vAllSamples$cluster)  # convert back to factor
-# gdc.1vAllSamples <- arrange(gdc.1vAllSamples, row.names(gdc.1vAllSamples))
-# gdc.1vAllCounts <- gdc.counts[,rownames(gdc.1vAllSamples)]
-# gdc.1vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.1vAllCounts, colData = gdc.1vAllSamples, design = ~ cluster)
-# gdc.1vAllSamples.dds <- DESeq(gdc.1vAllSamples.dds)
+gdc.1vAllSamples <- coldata
+gdc.1vAllSamples$cluster <- as.character(gdc.1vAllSamples$cluster)  # convert to char class
+gdc.1vAllSamples$cluster[gdc.1vAllSamples$cluster != "1"] <- "all"
+gdc.1vAllSamples$cluster <- as.factor(gdc.1vAllSamples$cluster)  # convert back to factor
+gdc.1vAllSamples <- arrange(gdc.1vAllSamples, row.names(gdc.1vAllSamples))
+gdc.1vAllCounts <- gdc.counts[,rownames(gdc.1vAllSamples)]
+# 
+# # Run DESeq on dataset
+gdc.1vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.1vAllCounts, colData = gdc.1vAllSamples, design = ~ cluster)
+gdc.1vAllSamples.dds <- DESeq(gdc.1vAllSamples.dds)
+# 
+# # Save the result, order them
+gdc.1vAll.results <- results(gdc.1vAllSamples.dds)
+gdc.1vAll.results.ordered <- gdc.1vAll.results[order(gdc.1vAll.results$pvalue),]
 
-# > results(gdc.1vAllSamples.dds)
+# Summary
+# > summary(gdc.1vAll.results.ordered)
+# 
+# out of 36710 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 330, 0.9%
+# LFC < 0 (down)     : 71, 0.19%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 12780, 35%
+# (mean count < 3)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+# > gdc.1vAll.results.ordered
 # log2 fold change (MLE): cluster all vs 1 
 # Wald test p-value: cluster all vs 1 
 # DataFrame with 38481 rows and 6 columns
-# baseMean log2FoldChange     lfcSE        stat    pvalue      padj
-# <numeric>      <numeric> <numeric>   <numeric> <numeric> <numeric>
-#   A1BG        25.95116      -0.508099  0.307542   -1.652129 0.0985083  0.578930
-# A1BG-AS1   114.31391      -0.237967  0.322285   -0.738375 0.4602865  0.869163
-# A1CF         1.77696       0.225483  0.733876    0.307250 0.7586531        NA
-# A2M      23368.17184       0.353718  0.265528    1.332132 0.1828168  0.694574
-# A2M-AS1    196.11169       0.298742  0.308219    0.969251 0.3324202  0.810822
-# ...              ...            ...       ...         ...       ...       ...
-# ZYG11B       2392.13    -0.01580087  0.147894 -0.10683915 0.9149166  0.985357
-# ZYX         27415.20     0.00423612  0.217979  0.01943362 0.9844952  0.998515
-# ZYXP1           0.00             NA        NA          NA        NA        NA
-# ZZEF1        2675.75    -0.00164311  0.228712 -0.00718421 0.9942679  0.999686
-# ZZZ3         2710.68    -0.25780171  0.150884 -1.70860903 0.0875234  0.556166
+# baseMean log2FoldChange     lfcSE      stat      pvalue        padj
+# <numeric>      <numeric> <numeric> <numeric>   <numeric>   <numeric>
+#   RNU1-21P    53.5070       23.07619  2.208495  10.44883 1.48340e-25 3.54994e-21
+# PRDM16-DT   74.7964       -4.75515  0.690843  -6.88311 5.85590e-12 7.00688e-08
+# DPEP3     1931.8278        6.45099  1.140610   5.65574 1.55175e-08 1.23783e-04
+# CRYM        40.6738       -3.03837  0.542219  -5.60358 2.09974e-08 1.25622e-04
+# PRDM16     129.7840       -3.25386  0.591058  -5.50515 3.68860e-08 1.76544e-04
+# ...             ...            ...       ...       ...         ...         ...
+# ZNF885P           0             NA        NA        NA          NA          NA
+# ZNF886P           0             NA        NA        NA          NA          NA
+# ZNRF3-AS1         0             NA        NA        NA          NA          NA
+# ZNRF3-IT1         0             NA        NA        NA          NA          NA
+# ZYXP1             0             NA        NA        NA          NA          NA
+
+# # Number of significantly expressed genes (padj < 0.01)
+# sum(gdc.1vAll.results$padj < 0.01, na.rm=TRUE)
+# # [1] 79 (0.205%)
+# sum(gdc.1vAll.results$padj < 0.05, na.rm=TRUE)
+# # [1] 248 (0.644%)
+
 
 ################################################################################
 
@@ -230,32 +256,57 @@ gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apegl
 
 # Cluster 2 v 1,3,4
 
-# gdc.2vAllSamples <- coldata
-# gdc.2vAllSamples$cluster <- as.character(gdc.2vAllSamples$cluster)  # convert to char class
-# gdc.2vAllSamples$cluster[gdc.2vAllSamples$cluster != "2"] <- "all"
-# gdc.2vAllSamples$cluster <- as.factor(gdc.2vAllSamples$cluster)  # convert back to factor
-# gdc.2vAllSamples <- arrange(gdc.2vAllSamples, row.names(gdc.2vAllSamples))
-# gdc.2vAllCounts <- gdc.counts[,rownames(gdc.2vAllSamples)]
-# gdc.2vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.2vAllCounts, colData = gdc.2vAllSamples, design = ~ cluster)
-# gdc.2vAllSamples.dds <- DESeq(gdc.2vAllSamples.dds)
+gdc.2vAllSamples <- coldata
+gdc.2vAllSamples$cluster <- as.character(gdc.2vAllSamples$cluster)  # convert to char class
+gdc.2vAllSamples$cluster[gdc.2vAllSamples$cluster != "2"] <- "all"
+gdc.2vAllSamples$cluster <- as.factor(gdc.2vAllSamples$cluster)  # convert back to factor
+gdc.2vAllSamples <- arrange(gdc.2vAllSamples, row.names(gdc.2vAllSamples))
+gdc.2vAllCounts <- gdc.counts[,rownames(gdc.2vAllSamples)]
+# 
+# Run DESeq on dataset
+gdc.2vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.2vAllCounts, colData = gdc.2vAllSamples, design = ~ cluster)
+gdc.2vAllSamples.dds <- DESeq(gdc.2vAllSamples.dds)
+# 
+# # Save the result, order them
+gdc.2vAll.results <- results(gdc.2vAllSamples.dds)
+gdc.2vAll.results.ordered <- gdc.2vAll.results[order(gdc.2vAll.results$pvalue),]
 
-# > results(gdc.2vAllSamples.dds)
+# Summary:
+
+# > summary(gdc.2vAll.results.ordered)
+# 
+# out of 36710 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 612, 1.7%
+# LFC < 0 (down)     : 866, 2.4%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 10650, 29%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+# > gdc.2vAll.results.ordered
 # log2 fold change (MLE): cluster all vs 2 
 # Wald test p-value: cluster all vs 2 
 # DataFrame with 38481 rows and 6 columns
-#             baseMean log2FoldChange     lfcSE      stat     pvalue      padj
-#            <numeric>      <numeric> <numeric> <numeric>  <numeric> <numeric>
-# A1BG        25.95116      0.0759335  0.193751  0.391912 0.69512331 0.8751890
-# A1BG-AS1   114.31391     -0.0998295  0.198210 -0.503655 0.61450350 0.8329645
-# A1CF         1.77696      0.5350430  0.449159  1.191209 0.23357137 0.5574271
-# A2M      23368.17184     -0.4640584  0.157969 -2.937656 0.00330704 0.0735366
-# A2M-AS1    196.11169      0.3181019  0.187491  1.696624 0.08976784 0.3696965
-# ...              ...            ...       ...       ...        ...       ...
-# ZYG11B       2392.13      0.1305730 0.0898558  1.453139  0.1461853  0.456270
-# ZYX         27415.20     -0.2636288 0.1313102 -2.007680  0.0446773  0.272483
-# ZYXP1           0.00             NA        NA        NA         NA        NA
-# ZZEF1        2675.75      0.0365515 0.1403098  0.260506  0.7944734  0.921482
-# ZZZ3         2710.68      0.0755771 0.0936856  0.806710  0.4198337  0.712412
+# baseMean log2FoldChange     lfcSE      stat      pvalue        padj
+# <numeric>      <numeric> <numeric> <numeric>   <numeric>   <numeric>
+#   SLC13A2    129.8274       4.542635  0.622165   7.30134 2.84924e-13 3.85407e-09
+# MYBPHL      81.2521       3.304045  0.452838   7.29631 2.95773e-13 3.85407e-09
+# MUC2        13.4277      -3.528642  0.490807  -7.18947 6.50433e-13 5.65031e-09
+# PYY        152.9412       3.936062  0.577730   6.81298 9.55945e-12 6.22822e-08
+# CD33       347.4338      -0.893277  0.134677  -6.63273 3.29542e-11 1.71764e-07
+# ...             ...            ...       ...       ...         ...         ...
+# ZNF885P           0             NA        NA        NA          NA          NA
+# ZNF886P           0             NA        NA        NA          NA          NA
+# ZNRF3-AS1         0             NA        NA        NA          NA          NA
+# ZNRF3-IT1         0             NA        NA        NA          NA          NA
+# ZYXP1             0             NA        NA        NA          NA          NA
+
+# sum(gdc.2vAll.results$padj < 0.01, na.rm=TRUE)
+# # [1] 350 (0.9095%)
+# sum(gdc.2vAll.results$padj < 0.05, na.rm=TRUE)
+# # [1] 907 (2.36%)
 
 ################################################################################
 
@@ -289,46 +340,99 @@ gdc.1v2.results.LFC <- lfcShrink(gdc.1v2.dds, coef="cluster_2_vs_1", type="apegl
 
 # Cluster 3 v 1,2,4
 
-# gdc.3vAllSamples <- coldata
-# gdc.3vAllSamples$cluster <- as.character(gdc.3vAllSamples$cluster)  # convert to char class
-# gdc.3vAllSamples$cluster[gdc.3vAllSamples$cluster != "3"] <- "all"
-# gdc.3vAllSamples$cluster <- as.factor(gdc.3vAllSamples$cluster)  # convert back to factor
-# gdc.3vAllSamples <- arrange(gdc.3vAllSamples, row.names(gdc.3vAllSamples))
-# gdc.3vAllCounts <- gdc.counts[,rownames(gdc.3vAllSamples)]
-# gdc.3vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.3vAllCounts, colData = gdc.3vAllSamples, design = ~ cluster)
-# gdc.3vAllSamples.dds <- DESeq(gdc.3vAllSamples.dds)
+gdc.3vAllSamples <- coldata
+gdc.3vAllSamples$cluster <- as.character(gdc.3vAllSamples$cluster)  # convert to char class
+gdc.3vAllSamples$cluster[gdc.3vAllSamples$cluster != "3"] <- "all"
+gdc.3vAllSamples$cluster <- as.factor(gdc.3vAllSamples$cluster)  # convert back to factor
+gdc.3vAllSamples <- arrange(gdc.3vAllSamples, row.names(gdc.3vAllSamples))
+gdc.3vAllCounts <- gdc.counts[,rownames(gdc.3vAllSamples)]
+
+# Run DESeq2 on dataset
+gdc.3vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.3vAllCounts, colData = gdc.3vAllSamples, design = ~ cluster)
+gdc.3vAllSamples.dds <- DESeq(gdc.3vAllSamples.dds)
+
+# Save the result, order them
+gdc.3vAll.results <- results(gdc.3vAllSamples.dds)
+gdc.3vAll.results.ordered <- gdc.3vAll.results[order(gdc.3vAll.results$pvalue),]
+
+# Summary:
+# > summary(gdc.3vAll.results.ordered)
 # 
-# > results(gdc.3vAllSamples.dds)
+# out of 36709 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 1198, 3.3%
+# LFC < 0 (down)     : 934, 2.5%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 9941, 27%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+# Total number of significant genes
+
+sum(gdc.3vAll.results$padj < 0.01, na.rm=TRUE)
+# [1] 721 (1.87% significant expressed genes)
+sum(gdc.3vAll.results$padj < 0.05, na.rm=TRUE)
+# [1] 1453 (3.77%)
+
+# > gdc.3vAll.results.ordered
 # log2 fold change (MLE): cluster all vs 3 
 # Wald test p-value: cluster all vs 3 
 # DataFrame with 38481 rows and 6 columns
-# baseMean log2FoldChange     lfcSE      stat    pvalue      padj
-# <numeric>      <numeric> <numeric> <numeric> <numeric> <numeric>
-#   A1BG        25.95116     -0.1320719  0.194368 -0.679492  0.496826  0.802868
-# A1BG-AS1   114.31391     -0.0288409  0.200309 -0.143982  0.885515  0.965983
-# A1CF         1.77696     -0.3621670  0.434985 -0.832596  0.405072  0.748467
-# A2M      23368.17184      0.1752992  0.164930  1.062872  0.287840  0.657431
-# A2M-AS1    196.11169     -0.3551225  0.188281 -1.886133  0.059277  0.318452
-# ...              ...            ...       ...       ...       ...       ...
-# ZYG11B       2392.13     -0.1426942 0.0905260 -1.576278  0.114962  0.440843
-# ZYX         27415.20      0.1526490 0.1343022  1.136608  0.255702  0.625413
-# ZYXP1           0.00             NA        NA        NA        NA        NA
-# ZZEF1        2675.75      0.0911641 0.1414611  0.644447  0.519286  0.815904
-# ZZZ3         2710.68      0.0667084 0.0946691  0.704648  0.481029  0.793515
+# baseMean log2FoldChange     lfcSE      stat      pvalue        padj
+# <numeric>      <numeric> <numeric> <numeric>   <numeric>   <numeric>
+#   PYY         133.4244       -4.51289  0.495235  -9.11262 8.04141e-20 2.15269e-15
+# EGF          84.2477       -2.64860  0.353776  -7.48667 7.06424e-14 9.45548e-10
+# TAP1      10924.0518       -1.20340  0.172116  -6.99182 2.71351e-12 2.42135e-08
+# SEZ6L        38.3774        2.80929  0.412352   6.81286 9.56766e-12 6.40315e-08
+# COLEC12    1776.0094        1.44501  0.220191   6.56250 5.29135e-11 2.83299e-07
+# ...              ...            ...       ...       ...         ...         ...
+# ZNF885P            0             NA        NA        NA          NA          NA
+# ZNF886P            0             NA        NA        NA          NA          NA
+# ZNRF3-AS1          0             NA        NA        NA          NA          NA
+# ZNRF3-IT1          0             NA        NA        NA          NA          NA
+# ZYXP1              0             NA        NA        NA          NA          NA
 
 ################################################################################
 
 # Cluster 4 v 1,2,3
 
-# gdc.4vAllSamples <- coldata
-# gdc.4vAllSamples$cluster <- as.character(gdc.4vAllSamples$cluster)  # convert to char class
-# gdc.4vAllSamples$cluster[gdc.4vAllSamples$cluster != "4"] <- "all"
-# gdc.4vAllSamples$cluster <- as.factor(gdc.4vAllSamples$cluster)  # convert back to factor
-# gdc.4vAllSamples <- arrange(gdc.4vAllSamples, row.names(gdc.4vAllSamples))
-# gdc.4vAllCounts <- gdc.counts[,rownames(gdc.4vAllSamples)]
-# gdc.4vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.4vAllCounts, colData = gdc.4vAllSamples, design = ~ cluster)
-# gdc.4vAllSamples.dds <- DESeq(gdc.4vAllSamples.dds)
+gdc.4vAllSamples <- coldata
+gdc.4vAllSamples$cluster <- as.character(gdc.4vAllSamples$cluster)  # convert to char class
+gdc.4vAllSamples$cluster[gdc.4vAllSamples$cluster != "4"] <- "all"
+gdc.4vAllSamples$cluster <- as.factor(gdc.4vAllSamples$cluster)  # convert back to factor
+gdc.4vAllSamples <- arrange(gdc.4vAllSamples, row.names(gdc.4vAllSamples))
+gdc.4vAllCounts <- gdc.counts[,rownames(gdc.4vAllSamples)]
+
+# Run DESeq on dataset
+gdc.4vAllSamples.dds <- DESeqDataSetFromMatrix(countData = gdc.4vAllCounts, colData = gdc.4vAllSamples, design = ~ cluster)
+gdc.4vAllSamples.dds <- DESeq(gdc.4vAllSamples.dds)
+
+# Save the result, order them
+gdc.4vAll.results <- results(gdc.4vAllSamples.dds)
+gdc.4vAll.results.ordered <- gdc.4vAll.results[order(gdc.4vAll.results$pvalue),]
+
+# Summary:
+
+# > summary(gdc.4vAll.results.ordered)
 # 
+# out of 36709 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 336, 0.92%
+# LFC < 0 (down)     : 156, 0.42%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 10651, 29%
+# (mean count < 1)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+# Total number of significant genes
+
+sum(gdc.4vAll.results$padj < 0.01, na.rm=TRUE)
+# [1] 48 (0.125%)
+sum(gdc.4vAll.results$padj < 0.05, na.rm=TRUE)
+# [1] 215 (0.559%)
+
 # > results(gdc.4vAllSamples.dds)
 # log2 fold change (MLE): cluster all vs 4 
 # Wald test p-value: cluster all vs 4 
