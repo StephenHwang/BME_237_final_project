@@ -45,6 +45,21 @@ exp.kal <- exp.kal[, order(colnames(exp.kal))]
 
 
 
+# load in data
+exp.gdc = readRDS(paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+exp.kal = readRDS(paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
+
+# sort data
+exp.kal <- exp.kal[, order(colnames(exp.kal))]
+exp.gdc <- exp.gdc[, order(colnames(exp.gdc))]
+
+
+
+
+
+
+
+
 # load expression and metadata by cluster
 kal.cluster.1 <- read.table(
   file = "./analysis/kal_cluster_1.tsv",

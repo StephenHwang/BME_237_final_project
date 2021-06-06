@@ -2,11 +2,13 @@ require(data.table)
 require(dplyr)
 require(plyr)
 library(ggplot2)
+require(ggpubr)
 
 library(tximport)
 library(biomaRt)
 library(stringr)
 library(forcats)
+
 
 home.dir <- '/home/stephen/Documents/classes/bme/237/final_project'
 setwd(home.dir)
@@ -112,29 +114,29 @@ enst = rownames(exp.gdc)
 enst.no_version = sapply(strsplit(as.character(enst),"\\."),"[[",1)
 g.name <- as.data.frame(getBM(attributes = c('ensembl_gene_id', 'hgnc_symbol'), filters = 'ensembl_gene_id', values=enst.no_version, mart=ensembl))
 head(g.name)
-# 
+#
 # #saveRDS(g.name, file = paste0(home.dir, "/data/kal_recode.rds"))
 # #saveRDS(g.name, file = paste0(home.dir, "/data/gdc_recode.rds"))
-# 
-# 
+#
+#
 # #g.name.list <- g.name$hgnc_symbol
 # #names(g.name.list) <- g.name$ensembl_transcript_id
 # #g.name.list <- g.name.list[!duplicated(names(g.name.list))]
-# 
+#
 #  # exp.gdc
 # # change g.name getBM depending on dataset
 # #   exp.gdc uses ensembl_gene_id
 # #   exp.kal uses ensembl_transcript_id
-# 
+#
 # # convert to ensembl_transcript_id to hgnc_symbol names
 # cts <- exp.kal
 # cts <- as.data.frame(cbind(cts, enst.no_version))
 # #cts$enst.no_version <- lvls_revalue(factor(cts$enst.no_version, levels = unique(g.name$ensembl_transcript_id)), g.name$hgnc_symbol)
 # cts$enst.no_version <- recode(cts$enst.no_version, !!!g.name.list)
-# 
+#
 # cts <- na.omit(cts)
 # head(cts)
-# 
+#
 # # aggregate duplicate gene and bind to integer count
 # cts.tmp <- aggregate(apply(cts[-7], 2, as.numeric), cts["enst.no_version"], sum)
 # cts <- cts.tmp[-1, -1]
@@ -229,14 +231,14 @@ colnames(data) <- c('KAL_count', 'GDC_count')
 data <- as.data.frame(data)
 
 # plot
-ggplot(data, aes(x=log10(GDC_count), y=log10(KAL_count))) + 
+ggplot(data, aes(x=log10(GDC_count), y=log10(KAL_count))) +
   theme_tufte() +
   geom_point() +
   labs(
     title = 'GDC_count vs KAL_count gene counts',
     x = 'GDC_count raw counts (log10)',
     y = 'KAL_count raw counts (log10)'
-  ) + 
+  ) +
   # stat_cor(
   #   method = 'spearman'
   # ) +
@@ -249,14 +251,14 @@ cor.test(
   method = 'pearson'
 )
 
-ggplot(data, aes(x=GDC_count, y=KAL_count)) + 
+ggplot(data, aes(x=GDC_count, y=KAL_count)) +
   theme_tufte() +
   geom_point() +
   labs(
     title = 'GDC_count vs KAL_count gene counts',
     x = 'GDC_count raw counts (log10)',
     y = 'KAL_count raw counts (log10)'
-  ) + 
+  ) +
   # stat_cor(
   #   method = 'spearman'
   # ) +
@@ -291,7 +293,7 @@ ggplot(meltData, aes(factor(variable), value)) +
 p.data <- transpose(data)
 colnames(p.data) <- rownames(data) # set sample names
 rownames(p.data) <- colnames(data) # set gene names
-  
+
 p.data <- melt(p.data)
 p.data <- (cbind(p.data, m.data[rep(seq_len(nrow(m.data)), each = ncol(data)), ]))
 
@@ -322,91 +324,6 @@ ggplot(
   )
 
 
-dataset.boxplot.func <- function(data,
-                                 data.x,
-                                 data.y,
-                                 feature1 = NULL,
-                                 feature2 = NULL,
-                                 violin = FALSE,
-                                 stats = FALSE,
-                                 facet = FALSE,
-                                 outlier.shape = 19,
-                                 facet.scale = "free_x",
-                                 p.title = "",
-                                 p.xlab = "",
-                                 p.ylab = "") {
-  if (is.null(feature1)) {
-    p <- ggplot(
-      data = data,
-      aes_string(
-        x = data.x,
-        y = data.y
-      )
-    )
-  }
-  else {
-    p <- ggplot(
-      data = data,
-      aes_string(
-        x = data.x,
-        y = data.y,
-        fill = feature1
-      )
-    )
-  }
-  p +
-    theme_tufte() +
-    
-    # violin plot
-    {
-      if (violin) {
-        geom_violin(alpha = 0.6)
-      }
-    } +
-    {
-      if (violin) {
-        stat_summary(
-          fun.data = whiskers,
-          geom = "pointrange",
-          color = "black",
-          size = 0.2
-        )
-      }
-    } +
-    {
-      if (!violin) {
-        geom_boxplot(
-          outlier.size = 0.5,
-          outlier.alpha = 0.8,
-          outlier.shape = outlier.shape,
-          color = "grey50",
-          alpha = 0.6,
-          lwd = 0.4
-        )
-      }
-    } +
-    
-    # factor2 facet
-    {
-      if (feature2 != "NULL") { # !is.null(feature2) ||
-        facet_wrap(feature2, scale = facet.scale, ncol = 3)
-      }
-    } +
-    
-    theme(
-      axis.text = element_text(size = 10),
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    ) +
-    labs(
-      title = p.title,
-      x = p.xlab,
-      y = p.ylab
-    )# +
-    #scale_fill_manual(values = as.vector(polychrome34()) ) +
-    #guides(fill = guide_legend(ncol = 3)) +
-    #theme(legend.position = "bottom", legend.box = "horizontal")
-}
-
 
 
 
@@ -424,16 +341,127 @@ write.table(exp.kal, file="data/exp_txt/exp_kal_recoded_aggr.txt",sep = "\t", qu
             ,row.names = T, col.names = T)
 
 
+################################################################################
+###                   Plotting
+################################################################################
+
+require(data.table)
+require(dplyr)
+require(plyr)
+library(ggplot2)
+
+home.dir <- '/home/stephen/Documents/classes/bme/237/final_project'
+setwd(home.dir)
+
+# plotting theme
+theme_tufte <- function(base_size = 19, base_family = "Arial", ticks = FALSE) # "serif"
+{
+  ret <- theme_bw(base_family = base_family, base_size = base_size) +
+    theme(
+      legend.background = element_blank(), legend.key = element_blank(),
+      panel.background = element_blank(), panel.border = element_blank(),
+      strip.background = element_blank(), plot.background = element_blank(),
+      axis.line = element_line(colour = "black", size = rel(1)),
+      panel.grid = element_blank(),
+      axis.text.y = element_text(colour = "black"),
+      panel.spacing = unit(1, "lines"),
+      plot.margin = unit(c(10, 10, 5, 0), "mm"),
+      axis.title = element_text(size = 19, face = "plain", family = "Arial"),
+      strip.text.x = element_text(colour = "black", face = "plain", family = "Arial", size = 19),
+      plot.caption = element_text(hjust = 1, size = 9) # 0 or 1 for left or right align
+    )
+  ret
+}
 
 
+# load in data
+exp.gdc = readRDS(paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+exp.kal = readRDS(paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
+
+# sort data
+exp.kal <- exp.kal[, order(colnames(exp.kal))]
+exp.gdc <- exp.gdc[, order(colnames(exp.gdc))]
+
+# overlap genes
+all.genes <- c(rownames(exp.gdc), rownames(exp.kal))
+all.overlap.genes <- all.genes[duplicated(all.genes)]
+
+exp.gdc.overlap.genes <- exp.gdc[rownames(exp.gdc) %in% all.overlap.genes, ]
+exp.kal.overlap.genes <- exp.kal[rownames(exp.kal) %in% all.overlap.genes, ]
 
 
+## scatter plot
+# average across rows
+exp.gdc.avg <- rowMeans(exp.gdc.overlap.genes)
+exp.kal.avg <- rowMeans(exp.kal.overlap.genes)
+
+data <- cbind(exp.kal.avg, exp.gdc.avg)
+colnames(data) <- c('KAL_count', 'GDC_count')
+data <- as.data.frame(data)
+
+# plot
+ggplot(data, aes(x=log10(GDC_count), y=log10(KAL_count))) +
+  theme_tufte() +
+  geom_point() +
+  labs(
+    title = 'STAR vs Kallisto: raw expression',
+    x = 'STAR raw counts (log10)',
+    y = 'Kallisto raw counts (log10)'
+  ) +
+  stat_cor(cor.coef.name = 'rho')
+
+# spearman correlation coefficient of: 0.9207038
+cor.test(
+  data$GDC_count,
+  data$KAL_count,
+  # method = 'pearson'
+  method = 'spearman'
+)
 
 
+################################################################################
+# Dataset boxplot of (237 sig samples)
+# data <- exp.gdc.overlap.genes
+# data <- exp.kal.overlap.genes
 
+# load in data
+exp.gdc = readRDS(paste0(home.dir, "/data/exp_gdc_recoded_aggr.rds"))
+exp.kal = readRDS(paste0(home.dir, "/data/exp_kal_recoded_aggr.rds"))
+exp.kal <- exp.kal[, order(colnames(exp.kal))] # sort data
+exp.gdc <- exp.gdc[, order(colnames(exp.gdc))]
+gdc_km_4 = readRDS(paste0(home.dir, "/analysis/gdc_km_4.rds"))
+kal_km_4 = readRDS(paste0(home.dir, "/analysis/kal_km_4.rds"))
 
-intersect(colnames(exp.gdc), colnames(exp.kal))
-length(colnames(exp.gdc)) - length(intersect(colnames(exp.gdc), colnames(exp.kal)))
+# filter expression data by final samples
+exp.kal <- exp.kal[, colnames(exp.kal) %in% intersect(colnames(exp.kal), names(kal_km_4$cluster))]
+exp.kal <- exp.kal[, order(colnames(exp.kal))]
+exp.gdc <- exp.gdc[, colnames(exp.gdc) %in% intersect(colnames(exp.gdc), names(gdc_km_4$cluster))]
+exp.gdc <- exp.gdc[, order(colnames(exp.kal))]
 
+# load in data
+data <- exp.gdc
+data <- exp.kal
+data <- melt(data)
+
+ggplot(
+  data = data,
+  aes(factor(variable),
+      log10(value+1))) +
+  geom_boxplot(
+    outlier.size = 0.5,
+    outlier.alpha = 0.8,
+    outlier.shape = NA,
+    color = "grey50",
+    alpha = 0.6,
+    lwd = 0.4
+  ) +
+  theme_tufte() +
+  labs(
+    title = 'Kallisto dataset expression',
+    x = 'Dataset',
+    y = 'log10 expression'
+  ) +
+  # scale_y_continuous(limits = quantile(log10(data$value+1), c(0.1, 0.9))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8))
 
 

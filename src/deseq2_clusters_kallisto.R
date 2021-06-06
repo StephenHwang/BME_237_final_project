@@ -124,10 +124,10 @@ kal.4vAll.results.ordered <- kal.4vAll.results[order(kal.4vAll.results$pvalue),]
 #    pvalue = Wald test p-value
 #    padj = Benjamini-Hochberg adjusted p-value
 
-saveRDS(kal.1vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_1vAll.rds'))
-saveRDS(kal.2vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_2vAll.rds'))
-saveRDS(kal.3vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_3vAll.rds'))
-saveRDS(kal.4vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_4vAll.rds'))
+#saveRDS(kal.1vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_1vAll.rds'))
+#saveRDS(kal.2vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_2vAll.rds'))
+#saveRDS(kal.3vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_3vAll.rds'))
+#saveRDS(kal.4vAll.results.ordered, file = paste0(home.dir, '/analysis/kal_DE_results/kal_de_4vAll.rds'))
 
 # load DESeq2 data
 kal.1vAll.results <- readRDS(paste0(home.dir, '/analysis/kal_DE_results/kal_de_1vAll.rds'))
@@ -149,9 +149,16 @@ p.val.threshold <- 0.05
 reg.threshold <- 0.5
 
 data <- kal.1vAll.results.ordered
+#data <- kal.2vAll.results.ordered
+#data <- kal.3vAll.results.ordered
+#data <- kal.4vAll.results.ordered
+
 data <- data[!is.na(data$padj),]
-data <- cbind(data[,c('log2FoldChange', 'padj')], 'None')
-# data <- cbind(data[,c('log2FoldChange', 'pvalue')], 'None')
+
+#data <- cbind(data[,c('log2FoldChange', 'padj')], 'None')
+data <- cbind(data[,c('log2FoldChange', 'pvalue')], 'None')
+
+
 colnames(data) <- c('log2.fc', 'padj', 'diffExp')
 data$neg.log10.pval <- -log10(data$padj)
 
@@ -199,7 +206,7 @@ ggplot(data=data,
   geom_vline(xintercept=c(reg.threshold, -reg.threshold), col="#3b3b3b") +
   geom_hline(yintercept=-log10(p.val.threshold), col="#3b3b3b") +
   guides(color = guide_legend(title = "Regulation", position = "right", direction  = "vertical")) +
-  labs(title='test title') #+
+  labs(title='Kallisto: Cluster 1 vs others') #+
   # xlim(-2.25, 2.25) +
   #ylim(-0.5, 0.75)
 
