@@ -211,7 +211,9 @@ ggplot(data=data,
   #ylim(-0.5, 0.75)
 
 
-
+# plot using
+# width: 800
+# height: 675
 
 
 

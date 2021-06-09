@@ -93,7 +93,7 @@ vcount(G1)
 ecount(G1)
 
 clusterlouvain <- cluster_louvain(G1)
-plot(G1, vertex.color=rainbow(12, alpha=0.6)[clusterlouvain$membership], 
+plot(G1, vertex.color=rainbow(12, alpha=0.6)[clusterlouvain$membership],
      vertex.label=NA,
      vertex.size=5,
      main="STAR-HTSeq2: Correlation Based Louvain Clustering")
@@ -124,10 +124,10 @@ mean(ss[, 3])
 # G1 <- graph.adjacency(sampleDistMatrix, mode = "undirected", weighted = TRUE, diag = TRUE)
 # vcount(G1)
 # ecount(G1)
-# 
+#
 # tmp <- knn(G1)
 
-
+# https://nbisweden.github.io/workshop-archive/workshop-scRNAseq/2019-02-04/labs/igraph
 make.knn.graph<-function(D,k){
   # calculate euclidean distances between cells
   dist<-as.matrix(dist(D))
